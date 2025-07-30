@@ -14,16 +14,53 @@
         .withUrl("/signalHub")
         .build();
 
-    connection.on("ReceiveNotification", function (message) {
-        const div = document.getElementById("resultado");
-        div.innerHTML += `<p><strong>🔔</strong> ${message}</p>`;
+    let notifications = [];
+
+    function updateNotificationUI() {
+        const countSpan = document.getElementById("notificationCount");
+        const list = document.getElementById("notificationList");
+
+        countSpan.innerText = notifications.length;
+
+        list.innerHTML = "";
+
+        if (notifications.length === 0) {
+            list.innerHTML = `<li class="dropdown-item text-muted">Sem notificações</li>`;
+        } else {
+            notifications.forEach((notif, index) => {
+                const li = document.createElement("li");
+                li.classList.add("dropdown-item");
+                li.style.cursor = "pointer";
+                li.textContent = notif.texto;
+
+                li.addEventListener("click", function () {
+                    // Redirecionar
+                    window.location.href = notif.url;
+
+                    // Remover notificação
+                    notifications.splice(index, 1);
+                    updateNotificationUI();
+                });
+
+                list.appendChild(li);
+            });
+        }
+    }
+
+    connection.on("ReceiveNotification", function (notificacao) {
+        notifications.unshift(notificacao);
+        updateNotificationUI();
     });
 
-    connection.start()
-        .then(() => console.log("✅ Conectado ao SignalR"))
-        .catch(err => console.error("❌ Erro:", err));
+    connection.start().then(() => {
+        console.log("✅ SignalR conectado");
+    }).catch(err => {
+        console.error("❌ Erro ao conectar:", err);
+    });
+
 
     document.getElementById("enviarNotificacao").addEventListener("click", function () {
         fetch("/Home/EnviarNotificacao", { method: "POST" });
     });
 </script>
+

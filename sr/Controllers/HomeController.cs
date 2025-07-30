@@ -34,16 +34,22 @@ namespace sr.Controllers
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
-        [HttpPost]
+        [HttpPost] 
         public async Task<IActionResult> EnviarNotificacao()
         {
-            string targetUser = "carlos@mail.com"; // Exemplo. Use User.Identity.Name se quiser notificar o usuário atual.
+            string targetUser = "carlos@mail.com";
 
-            string message = $"Você tem uma nova notificação às {DateTime.Now:T}";
+            var notificacao = new
+            {
+                texto = $"Você tem uma nova notificação às {DateTime.Now:T}",
+                url = Url.Action("Detalhes", "Notificacao", new { id = 123 }) // exemplo
+            };
 
-            await _hubContext.Clients.Group(targetUser).SendAsync("ReceiveNotification", message);
+            await _hubContext.Clients.Group(targetUser)
+                .SendAsync("ReceiveNotification", notificacao);
 
             return Ok();
         }
+
     }
 }
