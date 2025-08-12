@@ -12,8 +12,8 @@ using sr.Data;
 namespace sr.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250730091026_fst")]
-    partial class fst
+    [Migration("20250812090941_urls")]
+    partial class urls
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -241,6 +241,10 @@ namespace sr.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("url")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
                     b.ToTable("Notifications");
@@ -251,10 +255,7 @@ namespace sr.Migrations
                     b.Property<int>("NotificationId")
                         .HasColumnType("int");
 
-                    b.Property<string>("ApplicationUserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("ApplicationUserId1")
+                    b.Property<int>("ApplicationUserId")
                         .HasColumnType("int");
 
                     b.Property<bool>("IsRead")
@@ -262,7 +263,7 @@ namespace sr.Migrations
 
                     b.HasKey("NotificationId", "ApplicationUserId");
 
-                    b.HasIndex("ApplicationUserId1");
+                    b.HasIndex("ApplicationUserId");
 
                     b.ToTable("UserNotifications");
                 });
@@ -322,7 +323,7 @@ namespace sr.Migrations
                 {
                     b.HasOne("sr.Models.ApplicationUser", "ApplicationUser")
                         .WithMany("NotificationApplicationUsers")
-                        .HasForeignKey("ApplicationUserId1")
+                        .HasForeignKey("ApplicationUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

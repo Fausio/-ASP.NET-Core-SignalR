@@ -17,13 +17,29 @@ namespace sr.Data
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
-          
-            builder.Entity<NotificationApplicationUser>()     .HasKey(k => new { k.NotificationId, k.ApplicationUserId });
+            builder.Entity<NotificationApplicationUser>(entity =>
+            {
+                // PK composta
+                entity.HasKey(k => new { k.NotificationId, k.ApplicationUserId });
+
+                // Força tipo exato que existe no banco
+                entity.Property(p => p.ApplicationUserId)
+                      .HasColumnType("int")      // garante que é int
+                      .IsRequired();             // evita nullable se no banco não é
+
+                // Relação com Notification
+                entity.HasOne(n => n.Notification)
+                      .WithMany(n => n.NotificationApplicationUsers)
+                      .HasForeignKey(n => n.NotificationId);
+
+                // Relação com ApplicationUser
+                entity.HasOne(n => n.ApplicationUser)
+                      .WithMany(u => u.NotificationApplicationUsers)
+                      .HasForeignKey(n => n.ApplicationUserId);
+            });
 
             base.OnModelCreating(builder);
-            // Customize the ASP.NET Identity model and override the defaults if needed.
-            // For example, you can rename the ASP.NET Identity table names and more.
-            // Add your customizations after calling base.OnModelCreating(builder);
         }
+
     }
 }

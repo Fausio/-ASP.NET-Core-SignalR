@@ -1,18 +1,61 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - sr</title>
+    <title>@ViewData["Title"] - Meu App</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/sr.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        /* Estilo para o dropdown de notificações */
+        .notification-dropdown {
+            width: 350px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .notification-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+
+            .notification-item:hover {
+                background-color: #f8f9fa;
+            }
+
+        .notification-unread {
+            background-color: #f8f9fa;
+            font-weight: 500;
+        }
+
+        .notification-time {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+        }
+
+        /* Toast no canto superior direito */
+        .toast-top-right {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            z-index: 1100;
+        }
+    </style>
 </head>
 <body>
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">sr</a>
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Meu App</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -25,23 +68,37 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-bell"></i> Notificações <span id="notificationCount" class="badge bg-danger">0</span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown" id="notificationList">
-                                <li class="dropdown-item text-muted">Sem notificações</li>
-                            </ul>
-                        </li>
-
-
-
                     </ul>
-                    <partial name="_LoginPartial" />
+                    <ul class="navbar-nav">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link position-relative" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-bell fs-5"></i>
+                                <span id="notificationCount" class="notification-badge badge bg-danger rounded-pill d-none">0</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end notification-dropdown" aria-labelledby="notificationDropdown">
+                                <li>
+                                    <div class="d-flex justify-content-between px-3 py-2 border-bottom">
+                                        <h6 class="mb-0">Notificações</h6>
+                                        <small><a href="/Notification">Ver todas</a></small>
+                                    </div>
+                                </li>
+                                <div id="notificationList">
+                                <li class="text-center py-3">
+                                    <div class="spinner-border spinner-border-sm" role="status">
+                                        <span class="visually-hidden">Carregando...</span>
+                                    </div>
+                                    <span class="ms-2">Carregando notificações</span>
+                                </li>
                 </div>
+                </ul>
+                </li>
+                <partial name="_LoginPartial" />
+                </ul>
+            </div>
             </div>
         </nav>
     </header>
+
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()
@@ -50,27 +107,172 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2025 - sr - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            &copy; @DateTime.Now.Year - Meu App - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
-@*     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.16/signalr.min.js"></script>
-    <script>
-           document.addEventListener("DOMContentLoaded", function () {
-            const connection = new signalR.HubConnectionBuilder()
-                .withUrl("/signalHub") // Certifique-se de que esse é o mesmo path do seu Hub
-                .build();
-
-            connection.start()
-                .then(() => console.log("✅ Conectado ao SignalR!"))
-                .catch(err => console.error("❌ Erro na conexão SignalR:", err));
-        });
-
-    </script> *@
-     
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.16/signalr.min.js"></script>
+
+    <script>
+        // Sistema de Notificações
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/signalHub")
+            .withAutomaticReconnect()
+            .build();
+
+        let notifications = [];
+
+        // Formata o tempo decorrido
+        function timeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+
+            const intervals = {
+                ano: 31536000,
+                mês: 2592000,
+                semana: 604800,
+                dia: 86400,
+                hora: 3600,
+                minuto: 60,
+                segundo: 1
+            };
+
+            for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+                const interval = Math.floor(seconds / secondsInUnit);
+                if (interval >= 1) {
+                    return `${interval} ${unit}${interval === 1 ? '' : 's'} atrás`;
+                }
+            }
+
+            return "agora mesmo";
+        }
+
+        // Atualiza a UI do dropdown
+        function updateNotificationUI() {
+            const countSpan = document.getElementById("notificationCount");
+            const list = document.getElementById("notificationList");
+            const unreadCount = notifications.filter(n => !n.isRead).length;
+
+            // Atualiza o contador
+            countSpan.textContent = unreadCount > 99 ? "99+" : unreadCount;
+            unreadCount > 0 ? countSpan.classList.remove("d-none") : countSpan.classList.add("d-none");
+
+            // Atualiza a lista
+            if (notifications.length === 0) {
+                list.innerHTML = '<li class="text-center py-3 text-muted">Nenhuma notificação</li>';
+                return;
+            }
+
+            list.innerHTML = notifications.map(notif => `
+                <li class="notification-item ${!notif.isRead ? 'notification-unread' : ''}"
+                    onclick="handleNotificationClick(event, ${notif.id}, '${notif.url}', ${!notif.isRead})">
+                    <div class="d-flex justify-content-between">
+                        <div class="me-2">${notif.texto}</div>
+                        ${!notif.isRead ? '<span class="badge bg-primary">Não lida</span>' : ''}
+                    </div>
+                    <div class="notification-time mt-1">${timeAgo(notif.createdAt)}</div>
+                </li>
+            `).join("");
+        }
+
+        // Manipula o clique na notificação
+        window.handleNotificationClick = async function(event, id, url, isUnread) {
+            event.stopPropagation();
+
+            if (isUnread) {
+                try {
+                    await fetch(`/Notification/MarcarComoLida?id=${id}`, {
+                        method: "POST",
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    // Atualiza localmente
+                    const notif = notifications.find(n => n.id === id);
+                    if (notif) notif.isRead = true;
+                    updateNotificationUI();
+                } catch (error) {
+                    console.error("Erro ao marcar notificação como lida:", error);
+                }
+            }
+
+            window.location.href = url;
+        };
+
+        // Carrega notificações do NotificationController
+        async function loadNotifications() {
+            try {
+                const response = await fetch("/Notification/ObterNotificacoes");
+                if (response.ok) {
+                    notifications = await response.json();
+                    updateNotificationUI();
+                } else {
+                    list.innerHTML = '<li class="text-center py-3 text-danger">Erro ao carregar notificações</li>';
+                }
+            } catch (error) {
+                console.error("Erro ao carregar notificações:", error);
+                list.innerHTML = '<li class="text-center py-3 text-danger">Erro ao carregar notificações</li>';
+            }
+        }
+
+        // Mostra alerta no canto superior direito
+        function showAlertNotification(notificacao) {
+
+            console.log("notificacao",notificacao);
+
+            const toastContainer = document.createElement("div");
+            toastContainer.className = "toast-top-right";
+            toastContainer.innerHTML = `
+                <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="toast-header bg-primary text-white">
+                        <strong class="me-auto">Nova Notificação</strong>
+                        <small>${timeAgo(notificacao.createdAt)}</small>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body">
+                        ${notificacao.texto}  
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(toastContainer);
+
+            setTimeout(() => {
+                toastContainer.remove();
+            }, 5000);
+
+            toastContainer.querySelector(".btn-close").addEventListener("click", () => {
+                toastContainer.remove();
+            });
+
+            toastContainer.querySelector(".toast-body").addEventListener("click", () => {
+                window.location.href = notificacao.url;
+            });
+        }
+
+        // Configuração do SignalR
+        connection.on("ReceiveNotification", (notificacao) => {
+            notifications.unshift(notificacao);
+            updateNotificationUI();
+            showAlertNotification(notificacao);
+        });
+
+        // Inicia a conexão quando a página carrega
+        document.addEventListener("DOMContentLoaded", async () => {
+            try {
+                await connection.start();
+                console.log("SignalR conectado");
+                await loadNotifications();
+            } catch (err) {
+                console.error("Erro ao conectar SignalR:", err);
+            }
+        });
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

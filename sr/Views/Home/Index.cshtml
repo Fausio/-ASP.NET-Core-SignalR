@@ -7,58 +7,8 @@
 <button id="enviarNotificacao">Enviar Notificação</button>
 
 <div id="resultado"></div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.16/signalr.min.js"></script>
-<script>
-    const connection = new signalR.HubConnectionBuilder()
-        .withUrl("/signalHub")
-        .build();
-
-    let notifications = [];
-
-    function updateNotificationUI() {
-        const countSpan = document.getElementById("notificationCount");
-        const list = document.getElementById("notificationList");
-
-        countSpan.innerText = notifications.length;
-
-        list.innerHTML = "";
-
-        if (notifications.length === 0) {
-            list.innerHTML = `<li class="dropdown-item text-muted">Sem notificações</li>`;
-        } else {
-            notifications.forEach((notif, index) => {
-                const li = document.createElement("li");
-                li.classList.add("dropdown-item");
-                li.style.cursor = "pointer";
-                li.textContent = notif.texto;
-
-                li.addEventListener("click", function () {
-                    // Redirecionar
-                    window.location.href = notif.url;
-
-                    // Remover notificação
-                    notifications.splice(index, 1);
-                    updateNotificationUI();
-                });
-
-                list.appendChild(li);
-            });
-        }
-    }
-
-    connection.on("ReceiveNotification", function (notificacao) {
-        notifications.unshift(notificacao);
-        updateNotificationUI();
-    });
-
-    connection.start().then(() => {
-        console.log("✅ SignalR conectado");
-    }).catch(err => {
-        console.error("❌ Erro ao conectar:", err);
-    });
-
-
+ 
+<script> 
     document.getElementById("enviarNotificacao").addEventListener("click", function () {
         fetch("/Home/EnviarNotificacao", { method: "POST" });
     });
